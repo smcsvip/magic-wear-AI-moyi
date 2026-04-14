@@ -117,7 +117,7 @@ export function ImageUploader({ title, description, onImageSelect, currentPrevie
                   <img
                     src={currentPreview}
                     alt="Preview"
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-contain"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <Button variant="secondary" size="sm">

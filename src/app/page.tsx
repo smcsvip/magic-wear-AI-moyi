@@ -9,7 +9,7 @@ import { LandingHero } from '@/components/LandingHero'
 import { LandingFeatures } from '@/components/LandingFeatures'
 import { LandingFooter } from '@/components/LandingFooter'
 import { TryonState, TryonHistoryItem } from '@/types'
-import { Sparkles, Trash2, History, Maximize2, Loader2 } from 'lucide-react'
+import { Sparkles, Trash2, History, Maximize2, Loader2, Download } from 'lucide-react'
 
 export default function Home() {
   const [state, setState] = useState<TryonState>({
@@ -128,6 +128,23 @@ export default function Home() {
     setShowHistory(false)
   }
 
+  const handleDownload = async () => {
+    if (!state.resultImage) return
+    
+    try {
+      const a = document.createElement('a')
+      a.href = state.resultImage
+      a.download = `魔衣试穿-${Date.now()}.jpg`
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Download failed:', error)
+      alert('下载失败，请重试')
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <LandingHero />
@@ -242,7 +259,7 @@ export default function Home() {
                       </div>
                     </div>
                   ) : state.resultImage ? (
-                    <div className="relative">
+                    <div className="relative space-y-4">
                       <div className="relative w-full flex justify-center">
                         <div 
                           className="relative bg-gray-100 rounded-xl overflow-hidden cursor-pointer group"
@@ -261,6 +278,17 @@ export default function Home() {
                             </Button>
                           </div>
                         </div>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleDownload}
+                          className="bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700 text-white"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          下载图片
+                        </Button>
                       </div>
                     </div>
                   ) : (

@@ -8,6 +8,7 @@ import { ImageUploader } from '@/components/ImageUploader'
 import { LandingHero } from '@/components/LandingHero'
 import { LandingFeatures } from '@/components/LandingFeatures'
 import { LandingFooter } from '@/components/LandingFooter'
+import { ContactButton } from '@/components/ContactButton'
 import { TryonState, TryonHistoryItem } from '@/types'
 import { Sparkles, Trash2, History, Maximize2, Loader2, Download } from 'lucide-react'
 
@@ -342,6 +343,7 @@ export default function Home() {
       
       <LandingFeatures />
       <LandingFooter />
+      <ContactButton />
 
       {enlargedImage && (
         <div

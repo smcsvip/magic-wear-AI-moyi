@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int           @id @default(autoincrement())
+  username  String        @unique
+  password  String
+  nickname  String?       // 昵称，可空，未设置时前端显示用户名
+  avatar    String?       @db.Text // 头像，base64 字符串，可空
+  createdAt DateTime      @default(now()) @map("created_at")
+  records   TryonRecord[]
+
+  @@map("users")
+}
+
+model TryonRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  resultImage String   @map("result_image")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tryon_records")
+}

@@ -6,7 +6,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserCircle, Calendar, LogOut, Shirt, Pencil, Check, X, KeyRound, Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
+import { UserCircle, Calendar, LogOut, Shirt, Pencil, Check, X, KeyRound, Eye, EyeOff, Download } from 'lucide-react'
 
 // 用户信息的数据结构
 interface UserInfo {
@@ -24,6 +25,9 @@ export default function ProfilePage() {
   // 用户数据
   const [user, setUser] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // 放大预览状态
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null)
 
   // 昵称编辑状态
   const [editingNickname, setEditingNickname] = useState(false)
@@ -60,6 +64,15 @@ export default function ProfilePage() {
       })
       .catch(() => setLoading(false))
   }, [router])
+
+  // ESC 键关闭放大预览
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setEnlargedImage(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   // ── 头像上传 ──────────────────────────────────────────────
 
@@ -228,6 +241,26 @@ export default function ProfilePage() {
     router.refresh()
   }
 
+  // ── 下载图片 ──────────────────────────────────────────────
+
+  // 下载单张图片
+  function downloadImage(url: string, filename: string) {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+  }
+
+  // 全部下载：逐张触发下载，间隔 200ms 避免浏览器拦截
+  function downloadAll() {
+    if (!user) return
+    user.records.forEach((record, index) => {
+      setTimeout(() => {
+        downloadImage(record.resultImage, `tryon-${index + 1}.jpg`)
+      }, index * 200)
+    })
+  }
+
   // ── 渲染 ──────────────────────────────────────────────────
 
   if (loading) {
@@ -250,8 +283,14 @@ export default function ProfilePage() {
   })
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
+
+        {/* 返回首页 */}
+        <Link href="/" className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          ← 返回首页
+        </Link>
 
         {/* 用户信息卡片 */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
@@ -344,7 +383,19 @@ export default function ProfilePage() {
               试穿历史
               <span className="text-xs text-gray-400 font-normal">({user.records.length} 条)</span>
             </h2>
-            <a href="/" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">去试穿 →</a>
+            <div className="flex items-center gap-3">
+              {/* 全部下载按钮：有记录时才显示 */}
+              {user.records.length > 0 && (
+                <button
+                  onClick={downloadAll}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  全部下载
+                </button>
+              )}
+              <a href="/" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">去试穿 →</a>
+            </div>
           </div>
 
           {user.records.length === 0 ? (
@@ -353,14 +404,25 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {user.records.map(record => (
+              {user.records.map((record, index) => (
                 <div key={record.id} className="group relative">
-                  <div className="aspect-[3/4] rounded-xl overflow-hidden bg-gray-100">
+                  <div
+                    className="aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 cursor-pointer"
+                    onClick={() => setEnlargedImage(record.resultImage)}
+                  >
                     <img
                       src={record.resultImage}
                       alt="试穿结果"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
+                    {/* 悬停时显示下载按钮 */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); downloadImage(record.resultImage, `tryon-${index + 1}.jpg`) }}
+                      className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="下载"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <p className="text-xs text-gray-400 mt-1 text-center">
                     {new Date(record.createdAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
@@ -461,5 +523,27 @@ export default function ProfilePage() {
 
       </div>
     </div>
+
+    {/* 图片放大弹窗 */}
+    {enlargedImage && (
+      <div
+        className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        onClick={() => setEnlargedImage(null)}
+      >
+        <img
+          src={enlargedImage}
+          alt="放大预览"
+          className="max-w-full max-h-full rounded-xl object-contain"
+          onClick={e => e.stopPropagation()}
+        />
+        <button
+          onClick={() => setEnlargedImage(null)}
+          className="absolute top-4 right-4 text-white/70 hover:text-white text-2xl leading-none"
+        >
+          ✕
+        </button>
+      </div>
+    )}
+    </>
   )
 }

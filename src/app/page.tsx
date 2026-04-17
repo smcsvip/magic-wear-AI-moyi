@@ -227,11 +227,9 @@ export default function Home() {
     }
   }
 
-  // handleDbHistoryItemClick：点击历史面板里的某张图片
-  // 把该结果图片显示到试穿结果区（数据库记录没有人物/服装预览，只恢复结果图）
+  // handleDbHistoryItemClick：点击历史面板里的某张图片，放大预览
   const handleDbHistoryItemClick = (item: DbHistoryItem) => {
-    setState(prev => ({ ...prev, resultImage: item.resultImage, error: null }))
-    setShowHistory(false)
+    setEnlargedImage(item.resultImage)
   }
 
   return (
@@ -300,7 +298,7 @@ export default function Home() {
                     <div className="text-center py-8 text-gray-400 text-sm">暂无历史记录</div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {dbHistory.map((item) => (
+                      {dbHistory.map((item, index) => (
                         <div
                           key={item.id}
                           className="cursor-pointer group"
@@ -313,6 +311,20 @@ export default function Home() {
                               className="w-full h-full object-cover transition-transform group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all" />
+                            {/* 悬停时显示下载按钮 */}
+                            <button
+                              onClick={e => {
+                                e.stopPropagation() // 阻止触发 handleDbHistoryItemClick
+                                const a = document.createElement('a')
+                                a.href = item.resultImage
+                                a.download = `tryon-${index + 1}.jpg`
+                                a.click()
+                              }}
+                              className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="下载"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            </button>
                           </div>
                           <p className="text-xs text-gray-500 mt-2 text-center">
                             {new Date(item.createdAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}

@@ -2,6 +2,9 @@
 // 当用户点击"开始试穿"按钮时，前端会把两张图片发送到这里
 // 这里负责：接收图片 → 调用豆包 AI → 返回结果图片 → 如果已登录则保存记录
 
+// 告诉 Vercel 这个接口最多等 60 秒（AI 生图比较慢，默认 10 秒不够）
+export const maxDuration = 60
+
 import { NextRequest, NextResponse } from 'next/server'
 import { callDoubaoAPI } from '@/services/doubaoService'
 import { DoubaoServiceError, DoubaoErrorCode } from '@/services/types'

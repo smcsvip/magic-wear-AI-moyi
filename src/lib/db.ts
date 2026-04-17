@@ -1,7 +1,7 @@
 // 这个文件负责创建数据库连接
 // Prisma 是一个帮助我们操作数据库的工具，就像一个翻译官，把我们写的代码翻译成数据库能懂的语言
 
-import { PrismaClient } from 'prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 // globalForPrisma 是一个全局变量容器

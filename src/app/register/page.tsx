@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { validateUsername, normalizeUsername } from '@/lib/usernameUtils'
 
 export default function RegisterPage() {
@@ -19,6 +20,7 @@ export default function RegisterPage() {
   const [usernameError, setUsernameError] = useState('') // 用户名实时校验错误提示
   const [error, setError] = useState('')             // 表单整体错误提示信息
   const [loading, setLoading] = useState(false)      // 是否正在提交（防止重复点击）
+  const [turnstileToken, setTurnstileToken] = useState('') // Turnstile 验证 token
 
   // handleUsernameChange：用户名输入框的 onChange 事件
   // 每次用户输入都实时校验，给出即时反馈
@@ -50,6 +52,9 @@ export default function RegisterPage() {
     if (password.length < 6) { setError('密码至少6位'); return }
     if (password !== confirm) { setError('两次密码不一致'); return }
 
+    // 检查 Turnstile 验证是否完成
+    if (!turnstileToken) { setError('请完成人机验证'); return }
+
     setLoading(true) // 开始加载，禁用按钮
 
     // 发送注册请求到后端 API
@@ -57,7 +62,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: normalizeUsername(username), password }),
+      body: JSON.stringify({ username: normalizeUsername(username), password, turnstileToken }),
     })
     const data = await res.json()
     setLoading(false)
@@ -132,6 +137,14 @@ export default function RegisterPage() {
 
           {/* 表单整体错误提示：只有 error 不为空时才显示 */}
           {error && <p className="text-sm text-red-500">{error}</p>}
+
+          {/* Cloudflare Turnstile 人机验证组件 */}
+          <Turnstile
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setError('人机验证加载失败，请刷新重试')}
+            onExpire={() => setTurnstileToken('')}
+          />
 
           {/* 提交按钮：加载中时禁用，防止重复提交 */}
           <button

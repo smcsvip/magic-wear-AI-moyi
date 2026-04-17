@@ -10,8 +10,26 @@ import { validateUsername, normalizeUsername } from '@/lib/usernameUtils'
 
 // POST 函数：处理注册请求（只接受 POST 方法）
 export async function POST(request: NextRequest) {
-  // 从请求体里读取用户名和密码（前端发过来的 JSON 数据）
-  const { username, password } = await request.json()
+  // 从请求体里读取用户名、密码和 Turnstile 验证 token
+  const { username, password, turnstileToken } = await request.json()
+
+  // ── Turnstile 人机验证 ──
+  // 去 Cloudflare 服务器验证前端传来的 token 是否真实有效
+  if (!turnstileToken) {
+    return NextResponse.json({ message: '请完成人机验证' }, { status: 400 })
+  }
+  const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: turnstileToken,
+    }),
+  })
+  const verifyResult = await verifyRes.json()
+  if (!verifyResult.success) {
+    return NextResponse.json({ message: '人机验证失败，请重试' }, { status: 403 })
+  }
 
   // ── 用户名校验（后端兜底，即使前端绕过也能拦截）──
   // validateUsername 会检查：非空、4-16位、只含字母数字、不能纯数字

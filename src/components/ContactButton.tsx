@@ -14,12 +14,12 @@ export function ContactButton() {
 
   return (
     <>
-      {/* 悬浮按钮：固定在页面右下角，圆形，渐变色 */}
-      {/* fixed bottom-8 right-8 表示固定定位，距底部和右侧各 8 个单位 */}
+      {/* 悬浮按钮：固定在页面左下角，圆形，渐变色 */}
+      {/* fixed bottom-8 left-8 表示固定定位，距底部和左侧各 8 个单位 */}
       {/* z-50 确保按钮显示在其他内容上方 */}
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700 shadow-lg shadow-pink-500/25 transition-all hover:shadow-xl hover:shadow-pink-500/30 z-50"
+        className="fixed bottom-8 left-8 w-14 h-14 rounded-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700 shadow-lg shadow-pink-500/25 transition-all hover:shadow-xl hover:shadow-pink-500/30 z-50"
       >
         <MessageCircle className="h-6 w-6" />
       </Button>

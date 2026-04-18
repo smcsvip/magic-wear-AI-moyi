@@ -5,6 +5,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import CrispChat from "@/components/CrispChat";
 
 // 加载 Geist 无衬线字体（用于正文）
 // variable 是 CSS 变量名，subsets 指定字符集（latin = 拉丁字母）
@@ -40,7 +41,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       {/* min-h-full 确保页面至少占满整个屏幕高度 */}
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* Crisp 在线客服组件 */}
+        <CrispChat />
+      </body>
     </html>
   );
 }

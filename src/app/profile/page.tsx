@@ -17,7 +17,7 @@ interface UserInfo {
   avatar: string | null
   email: string | null
   emailUpdatedAt: string | null
-  emailSubscribed: boolean  // 是否订阅每日邮件
+  emailSubscribed?: boolean  // 是否订阅每日邮件（可选，兼容老用户）
   createdAt: string
   records: { id: number; resultImage: string; createdAt: string }[]
 }
@@ -353,16 +353,20 @@ export default function ProfilePage() {
     if (!user) return
     setEmailSubscribedToggling(true)
 
+    // 如果 emailSubscribed 是 undefined，默认当前状态为 true（已订阅）
+    const currentState = user.emailSubscribed ?? true
+    const newState = !currentState
+
     const res = await fetch('/api/user/email-subscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscribed: !user.emailSubscribed }),
+      body: JSON.stringify({ subscribed: newState }),
     })
 
     setEmailSubscribedToggling(false)
 
     if (res.ok) {
-      setUser(prev => prev ? { ...prev, emailSubscribed: !prev.emailSubscribed } : prev)
+      setUser(prev => prev ? { ...prev, emailSubscribed: newState } : prev)
     }
   }
 
@@ -580,12 +584,12 @@ export default function ProfilePage() {
                   onClick={toggleEmailSubscribed}
                   disabled={emailSubscribedToggling}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                    user.emailSubscribed ? 'bg-gray-900' : 'bg-gray-200'
+                    (user.emailSubscribed ?? true) ? 'bg-gray-900' : 'bg-gray-200'
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      user.emailSubscribed ? 'translate-x-6' : 'translate-x-1'
+                      (user.emailSubscribed ?? true) ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>

@@ -3,14 +3,21 @@
 // 请求体：{ subscribed: boolean }
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthToken, verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   // 验证用户登录状态
-  const payload = await verifyToken()
-  if (!payload) {
+  const token = await getAuthToken()
+  if (!token) {
     return NextResponse.json({ message: '未登录' }, { status: 401 })
+  }
+
+  let payload
+  try {
+    payload = await verifyToken(token)
+  } catch {
+    return NextResponse.json({ message: '登录已过期' }, { status: 401 })
   }
 
   const { subscribed } = await request.json()

@@ -11,6 +11,7 @@ model User {
   username         String        @unique
   email            String?       @unique // 邮箱，可空（老用户），不能重复
   emailUpdatedAt   DateTime?     @map("email_updated_at") // 邮箱最后修改时间，用于 7 天限制
+  emailSubscribed  Boolean       @default(true) @map("email_subscribed") // 是否订阅每日邮件，默认订阅
   password         String
   nickname         String?       // 昵称，可空，未设置时前端显示用户名
   avatar           String?       @db.Text // 头像，base64 字符串，可空

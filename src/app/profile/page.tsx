@@ -17,6 +17,7 @@ interface UserInfo {
   avatar: string | null
   email: string | null
   emailUpdatedAt: string | null
+  emailSubscribed: boolean  // 是否订阅每日邮件
   createdAt: string
   records: { id: number; resultImage: string; createdAt: string }[]
 }
@@ -65,6 +66,9 @@ export default function ProfilePage() {
   const [emailMsg, setEmailMsg] = useState('')
   const [emailMsgType, setEmailMsgType] = useState<'ok' | 'err'>('ok')
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  // 邮件订阅状态
+  const [emailSubscribedToggling, setEmailSubscribedToggling] = useState(false)
 
   // 页面加载时获取用户信息
   useEffect(() => {
@@ -344,6 +348,24 @@ export default function ProfilePage() {
     }
   }
 
+  // ── 切换邮件订阅状态 ──────────────────────────────────────────────
+  async function toggleEmailSubscribed() {
+    if (!user) return
+    setEmailSubscribedToggling(true)
+
+    const res = await fetch('/api/user/email-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscribed: !user.emailSubscribed }),
+    })
+
+    setEmailSubscribedToggling(false)
+
+    if (res.ok) {
+      setUser(prev => prev ? { ...prev, emailSubscribed: !prev.emailSubscribed } : prev)
+    }
+  }
+
   // ── 下载图片 ──────────────────────────────────────────────  // 下载单张图片
   function downloadImage(url: string, filename: string) {
     const a = document.createElement('a')
@@ -545,6 +567,31 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+
+          {/* 邮件订阅开关：只有设置了邮箱才显示 */}
+          {user.email && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">每日问候邮件</p>
+                  <p className="text-xs text-gray-500 mt-0.5">每晚 8 点收到 AI 生成的个性化问候</p>
+                </div>
+                <button
+                  onClick={toggleEmailSubscribed}
+                  disabled={emailSubscribedToggling}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                    user.emailSubscribed ? 'bg-gray-900' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      user.emailSubscribed ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 试穿历史记录 */}

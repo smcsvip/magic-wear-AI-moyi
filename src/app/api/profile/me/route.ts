@@ -28,6 +28,7 @@ export async function GET() {
       avatar: true,
       email: true,
       emailUpdatedAt: true,
+      emailSubscribed: true,  // 邮件订阅状态
       createdAt: true,
       records: {
         orderBy: { createdAt: 'desc' },

@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { UserCircle, Calendar, LogOut, Shirt, Pencil, Check, X, KeyRound, Eye, EyeOff, Download } from 'lucide-react'
+import { UserCircle, Calendar, LogOut, Shirt, Pencil, Check, X, KeyRound, Eye, EyeOff, Download, Mail } from 'lucide-react'
 
 // 用户信息的数据结构
 interface UserInfo {
@@ -15,6 +15,8 @@ interface UserInfo {
   username: string
   nickname: string | null
   avatar: string | null
+  email: string | null
+  emailUpdatedAt: string | null
   createdAt: string
   records: { id: number; resultImage: string; createdAt: string }[]
 }
@@ -52,6 +54,18 @@ export default function ProfilePage() {
   const [passwordMsg, setPasswordMsg] = useState('')
   const [passwordMsgType, setPasswordMsgType] = useState<'ok' | 'err'>('ok')
 
+  // 邮箱编辑状态
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailVerifyCode, setEmailVerifyCode] = useState('')
+  const [emailCodeSent, setEmailCodeSent] = useState(false)
+  const [emailSendingCode, setEmailSendingCode] = useState(false)
+  const [emailCountdown, setEmailCountdown] = useState(0)
+  const [emailSaving, setEmailSaving] = useState(false)
+  const [emailMsg, setEmailMsg] = useState('')
+  const [emailMsgType, setEmailMsgType] = useState<'ok' | 'err'>('ok')
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   // 页面加载时获取用户信息
   useEffect(() => {
     fetch('/api/profile/me')
@@ -73,6 +87,14 @@ export default function ProfilePage() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
+
+  // 邮箱验证码倒计时
+  useEffect(() => {
+    if (emailCountdown > 0) {
+      const timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [emailCountdown])
 
   // ── 头像上传 ──────────────────────────────────────────────
 
@@ -241,9 +263,88 @@ export default function ProfilePage() {
     router.refresh()
   }
 
-  // ── 下载图片 ──────────────────────────────────────────────
+  // ── 邮箱编辑 ──────────────────────────────────────────────
 
-  // 下载单张图片
+  function startEditEmail(autoOpen = false) {
+    setEmailInput(user?.email ?? '')
+    setEmailVerifyCode('')
+    setEmailCodeSent(false)
+    setEmailCountdown(0)
+    setEmailMsg('')
+    setEditingEmail(true)
+    if (autoOpen) setTimeout(() => document.getElementById('email-input')?.focus(), 100)
+  }
+
+  function cancelEditEmail() {
+    setEditingEmail(false)
+    setEmailMsg('')
+  }
+
+  async function handleSendEmailCode() {
+    const trimmed = emailInput.trim().toLowerCase()
+    if (!trimmed || !EMAIL_REGEX.test(trimmed)) {
+      setEmailMsg('请输入正确的邮箱')
+      setEmailMsgType('err')
+      return
+    }
+    setEmailSendingCode(true)
+    const res = await fetch('/api/email/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: trimmed }),
+    })
+    const data = await res.json()
+    setEmailSendingCode(false)
+    if (res.ok) {
+      setEmailCodeSent(true)
+      setEmailCountdown(60)
+      setEmailMsg('')
+    } else {
+      setEmailMsg(data.message)
+      setEmailMsgType('err')
+    }
+  }
+
+  async function saveEmail() {
+    const trimmed = emailInput.trim().toLowerCase()
+    if (!trimmed) { setEmailMsg('邮箱不能为空'); setEmailMsgType('err'); return }
+    if (!EMAIL_REGEX.test(trimmed)) { setEmailMsg('邮箱格式不正确'); setEmailMsgType('err'); return }
+    if (!emailVerifyCode.trim()) { setEmailMsg('请输入验证码'); setEmailMsgType('err'); return }
+    if (emailVerifyCode.trim().length !== 6) { setEmailMsg('验证码为 6 位数字'); setEmailMsgType('err'); return }
+
+    // 先验证验证码
+    const verifyRes = await fetch('/api/email/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: trimmed, code: emailVerifyCode.trim() }),
+    })
+    if (!verifyRes.ok) {
+      const verifyData = await verifyRes.json()
+      setEmailMsg(verifyData.message)
+      setEmailMsgType('err')
+      return
+    }
+
+    setEmailSaving(true)
+    setEmailMsg('')
+    const res = await fetch('/api/user/email', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: trimmed }),
+    })
+    const data = await res.json()
+    setEmailSaving(false)
+    if (!res.ok) {
+      setEmailMsg(data.message)
+      setEmailMsgType('err')
+    } else {
+      setUser(prev => prev ? { ...prev, email: trimmed, emailUpdatedAt: new Date().toISOString() } : prev)
+      setEditingEmail(false)
+      setEmailMsg('')
+    }
+  }
+
+  // ── 下载图片 ──────────────────────────────────────────────  // 下载单张图片
   function downloadImage(url: string, filename: string) {
     const a = document.createElement('a')
     a.href = url
@@ -291,6 +392,22 @@ export default function ProfilePage() {
         <Link href="/" className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600 transition-colors">
           ← 返回首页
         </Link>
+
+        {/* 老用户未设置邮箱提示条 */}
+        {!user.email && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-amber-700">
+              <Mail className="w-4 h-4 flex-shrink-0" />
+              <span>您还未设置邮箱，建议完善账号信息</span>
+            </div>
+            <button
+              onClick={() => startEditEmail(true)}
+              className="text-xs text-amber-700 font-medium hover:underline flex-shrink-0 ml-3"
+            >
+              立即设置
+            </button>
+          </div>
+        )}
 
         {/* 用户信息卡片 */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
@@ -372,6 +489,61 @@ export default function ProfilePage() {
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2.5">
             <Calendar className="w-4 h-4 flex-shrink-0" />
             <span>注册于 {createdAtStr}</span>
+          </div>
+
+          {/* 邮箱区域 */}
+          <div className="mt-3">
+            {editingEmail ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="email-input"
+                    type="email"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    placeholder="请输入邮箱"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={emailVerifyCode}
+                    onChange={e => setEmailVerifyCode(e.target.value)}
+                    maxLength={6}
+                    placeholder="请输入 6 位验证码"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendEmailCode}
+                    disabled={emailSendingCode || emailCountdown > 0 || !emailInput.trim()}
+                    className="px-3 py-2 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                  >
+                    {emailSendingCode ? '发送中' : emailCountdown > 0 ? `${emailCountdown}秒` : emailCodeSent ? '重发' : '发送'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={saveEmail} disabled={emailSaving} className="text-gray-600 hover:text-gray-900 disabled:opacity-40">
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button onClick={cancelEditEmail} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {emailMsg && (
+                  <p className={`text-xs ${emailMsgType === 'ok' ? 'text-green-600' : 'text-red-500'}`}>{emailMsg}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2.5">
+                <Mail className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">{user.email ?? '未设置邮箱'}</span>
+                <button onClick={() => startEditEmail()} className="text-gray-300 hover:text-gray-500" title="修改邮箱">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

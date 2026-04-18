@@ -26,6 +26,8 @@ export async function GET() {
       username: true,
       nickname: true,
       avatar: true,
+      email: true,
+      emailUpdatedAt: true,
       createdAt: true,
       records: {
         orderBy: { createdAt: 'desc' },

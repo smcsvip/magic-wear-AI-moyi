@@ -7,13 +7,15 @@ datasource db {
 }
 
 model User {
-  id        Int           @id @default(autoincrement())
-  username  String        @unique
-  password  String
-  nickname  String?       // 昵称，可空，未设置时前端显示用户名
-  avatar    String?       @db.Text // 头像，base64 字符串，可空
-  createdAt DateTime      @default(now()) @map("created_at")
-  records   TryonRecord[]
+  id               Int           @id @default(autoincrement())
+  username         String        @unique
+  email            String?       @unique // 邮箱，可空（老用户），不能重复
+  emailUpdatedAt   DateTime?     @map("email_updated_at") // 邮箱最后修改时间，用于 7 天限制
+  password         String
+  nickname         String?       // 昵称，可空，未设置时前端显示用户名
+  avatar           String?       @db.Text // 头像，base64 字符串，可空
+  createdAt        DateTime      @default(now()) @map("created_at")
+  records          TryonRecord[]
 
   @@map("users")
 }
@@ -26,4 +28,15 @@ model TryonRecord {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("tryon_records")
+}
+
+model EmailVerification {
+  id        Int      @id @default(autoincrement())
+  email     String   // 邮箱地址
+  code      String   // 6 位验证码
+  expiresAt DateTime @map("expires_at") // 过期时间
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, expiresAt]) // 加索引提升查询速度
+  @@map("email_verifications")
 }

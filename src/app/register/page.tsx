@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Turnstile } from '@marsidev/react-turnstile'
@@ -14,13 +14,62 @@ export default function RegisterPage() {
   const router = useRouter() // 用于页面跳转
 
   // 用 useState 管理表单的各个字段和状态
-  const [username, setUsername] = useState('')       // 用户名输入框的值
-  const [password, setPassword] = useState('')       // 密码输入框的值
-  const [confirm, setConfirm] = useState('')         // 确认密码输入框的值
-  const [usernameError, setUsernameError] = useState('') // 用户名实时校验错误提示
-  const [error, setError] = useState('')             // 表单整体错误提示信息
-  const [loading, setLoading] = useState(false)      // 是否正在提交（防止重复点击）
-  const [turnstileToken, setTurnstileToken] = useState('') // Turnstile 验证 token
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [sendingCode, setSendingCode] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [usernameError, setUsernameError] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  // 倒计时 useEffect
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [countdown])
+
+  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value
+    setEmail(value)
+    if (value) {
+      setEmailError(EMAIL_REGEX.test(value) ? '' : '邮箱格式不正确')
+    } else {
+      setEmailError('')
+    }
+  }
+
+  // 发送验证码
+  async function handleSendCode() {
+    if (!email.trim() || !EMAIL_REGEX.test(email.trim())) {
+      setEmailError('请输入正确的邮箱')
+      return
+    }
+    setSendingCode(true)
+    const res = await fetch('/api/email/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim() }),
+    })
+    const data = await res.json()
+    setSendingCode(false)
+    if (res.ok) {
+      setCodeSent(true)
+      setCountdown(60) // 60 秒倒计时
+      setError('')
+    } else {
+      setError(data.message)
+    }
+  }
 
   // handleUsernameChange：用户名输入框的 onChange 事件
   // 每次用户输入都实时校验，给出即时反馈
@@ -43,9 +92,29 @@ export default function RegisterPage() {
     e.preventDefault() // 阻止表单默认的页面刷新行为
     setError('')        // 清空之前的错误信息
 
-    // 提交前再次校验用户名（防止用户绕过实时校验直接提交）
+    // 提交前再次校验用户名
     const usernameErr = validateUsername(username)
     if (usernameErr) { setError(usernameErr); return }
+
+    // 邮箱校验
+    if (!email.trim()) { setError('邮箱不能为空'); return }
+    if (!EMAIL_REGEX.test(email.trim())) { setError('邮箱格式不正确'); return }
+
+    // 验证码校验
+    if (!verifyCode.trim()) { setError('请输入验证码'); return }
+    if (verifyCode.trim().length !== 6) { setError('验证码为 6 位数字'); return }
+
+    // 先验证验证码
+    const verifyRes = await fetch('/api/email/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), code: verifyCode.trim() }),
+    })
+    if (!verifyRes.ok) {
+      const verifyData = await verifyRes.json()
+      setError(verifyData.message)
+      return
+    }
 
     // 密码校验
     if (!password) { setError('密码不能为空'); return }
@@ -62,7 +131,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: normalizeUsername(username), password, turnstileToken }),
+      body: JSON.stringify({ username: normalizeUsername(username), email: email.trim().toLowerCase(), password, turnstileToken }),
     })
     const data = await res.json()
     setLoading(false)
@@ -109,6 +178,42 @@ export default function RegisterPage() {
                 支持字母、字母+数字，4-16 位，不能纯数字，不可包含空格、特殊符号
               </p>
             )}
+          </div>
+
+          {/* 邮箱输入框 */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">邮箱</label>
+            <input
+              type="email"
+              value={email}
+              onChange={handleEmailChange}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 transition-colors"
+              placeholder="请输入邮箱"
+            />
+            {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+          </div>
+
+          {/* 验证码输入框 */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">邮箱验证码</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={verifyCode}
+                onChange={e => setVerifyCode(e.target.value)}
+                maxLength={6}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 transition-colors"
+                placeholder="请输入 6 位验证码"
+              />
+              <button
+                type="button"
+                onClick={handleSendCode}
+                disabled={sendingCode || countdown > 0 || !email.trim() || !!emailError}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                {sendingCode ? '发送中...' : countdown > 0 ? `${countdown}秒后重发` : codeSent ? '重新发送' : '发送验证码'}
+              </button>
+            </div>
           </div>
 
           {/* 密码输入框 */}

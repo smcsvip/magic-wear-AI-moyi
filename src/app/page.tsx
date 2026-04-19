@@ -16,7 +16,7 @@ import { LandingFooter } from '@/components/LandingFooter'
 import { ContactButton } from '@/components/ContactButton'
 import { Navbar } from '@/components/Navbar'
 import { TryonState } from '@/types'
-import { Sparkles, Trash2, History, Maximize2, Loader2, Download } from 'lucide-react'
+import { Sparkles, Trash2, History, Maximize2, Loader2, Download, MessageSquare } from 'lucide-react'
 
 // 从数据库加载的历史记录类型（和个人中心一致）
 interface DbHistoryItem {
@@ -276,6 +276,15 @@ export default function Home() {
             >
               <Trash2 className="mr-2 h-4 w-4" />
               清空
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/feedback')}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              反馈建议
             </Button>
           </div>
 

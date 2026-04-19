@@ -41,3 +41,14 @@ model EmailVerification {
   @@index([email, expiresAt]) // 加索引提升查询速度
   @@map("email_verifications")
 }
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  type      String   // 反馈类型：bug, feature, other
+  content   String   @db.Text // 反馈内容
+  email     String?  // 联系邮箱（可选）
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("feedbacks")
+}
+

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight, Check, Download } from 'lucide-react'
 
 interface Feedback {
   id: number
@@ -96,6 +96,14 @@ export default function AdminFeedbackPage() {
           <div className="flex items-center justify-between">
             <CardTitle>反馈列表</CardTitle>
             <div className="flex items-center gap-2">
+              <a
+                href="/api/admin/export?type=feedbacks"
+                download
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                导出 CSV
+              </a>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}

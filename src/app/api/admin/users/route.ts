@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         username: true,
         email: true,
         role: true,
+        status: true,
         createdAt: true,
         _count: {
           select: {
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
           username: user.username,
           email: user.email,
           role: user.role,
+          status: user.status,
           createdAt: user.createdAt,
           tryonCount: user._count.records
         })),

@@ -7,17 +7,18 @@ datasource db {
 }
 
 model User {
-  id               Int           @id @default(autoincrement())
-  username         String        @unique
-  email            String?       @unique // 邮箱，可空（老用户），不能重复
-  emailUpdatedAt   DateTime?     @map("email_updated_at") // 邮箱最后修改时间，用于 7 天限制
-  emailSubscribed  Boolean       @default(true) @map("email_subscribed") // 是否订阅每日邮件，默认订阅
-  password         String
-  nickname         String?       // 昵称，可空，未设置时前端显示用户名
-  avatar           String?       @db.Text // 头像，base64 字符串，可空
-  role             String        @default("user") // 用户角色：user | admin
-  createdAt        DateTime      @default(now()) @map("created_at")
-  records          TryonRecord[]
+  id              Int           @id @default(autoincrement())
+  username        String        @unique
+  email           String?       @unique
+  emailUpdatedAt  DateTime?     @map("email_updated_at")
+  emailSubscribed Boolean       @default(true) @map("email_subscribed")
+  password        String
+  nickname        String?
+  avatar          String?       @db.Text
+  role            String        @default("user")
+  status          String        @default("active")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  records         TryonRecord[]
 
   @@map("users")
 }
@@ -34,23 +35,32 @@ model TryonRecord {
 
 model EmailVerification {
   id        Int      @id @default(autoincrement())
-  email     String   // 邮箱地址
-  code      String   // 6 位验证码
-  expiresAt DateTime @map("expires_at") // 过期时间
+  email     String
+  code      String
+  expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([email, expiresAt]) // 加索引提升查询速度
+  @@index([email, expiresAt])
   @@map("email_verifications")
 }
 
 model Feedback {
   id        Int      @id @default(autoincrement())
-  type      String   // 反馈类型：bug, feature, other
-  content   String   @db.Text // 反馈内容
-  email     String?  // 联系邮箱（可选）
-  status    String   @default("pending") // 状态：pending | resolved
+  type      String
+  content   String   @db.Text
+  email     String?
+  status    String   @default("pending")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("feedbacks")
 }
 
+// 系统配置表：存储全局系统设置
+model SystemConfig {
+  id                 Int      @id @default(autoincrement())
+  maintenanceMode    Boolean  @default(false) @map("maintenance_mode") // 维护模式开关
+  maintenanceMessage String?  @db.Text @map("maintenance_message") // 维护提示信息
+  updatedAt          DateTime @updatedAt @map("updated_at") // 最后更新时间
+
+  @@map("system_configs")
+}

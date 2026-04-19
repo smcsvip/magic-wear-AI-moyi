@@ -36,6 +36,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: '用户名或密码错误' }, { status: 401 })
   }
 
+  // 检查用户是否被禁用
+  if (user.status === 'disabled') {
+    return NextResponse.json({ message: '账号已被禁用，请联系管理员' }, { status: 403 })
+  }
+
   // 登录成功：生成 JWT 令牌并存到 Cookie
   const token = await signToken({ userId: user.id, username: user.username })
   await setAuthCookie(token)

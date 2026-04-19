@@ -1,8 +1,12 @@
+// 管理后台布局组件
+// 包含侧边栏导航、用户信息、退出登录功能
+// 验证管理员权限，非管理员自动跳转到登录页
+
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Users, MessageSquare, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, MessageSquare, LogOut, Image, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminUser {
@@ -45,7 +49,9 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin/dashboard', label: '概览', icon: LayoutDashboard },
     { href: '/admin/users', label: '用户管理', icon: Users },
+    { href: '/admin/tryon-records', label: '试穿记录', icon: Image },
     { href: '/admin/feedback', label: '反馈管理', icon: MessageSquare },
+    { href: '/admin/settings', label: '系统设置', icon: Settings },
   ]
 
   return (

@@ -15,6 +15,7 @@ model User {
   password         String
   nickname         String?       // 昵称，可空，未设置时前端显示用户名
   avatar           String?       @db.Text // 头像，base64 字符串，可空
+  role             String        @default("user") // 用户角色：user | admin
   createdAt        DateTime      @default(now()) @map("created_at")
   records          TryonRecord[]
 
@@ -47,6 +48,7 @@ model Feedback {
   type      String   // 反馈类型：bug, feature, other
   content   String   @db.Text // 反馈内容
   email     String?  // 联系邮箱（可选）
+  status    String   @default("pending") // 状态：pending | resolved
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("feedbacks")

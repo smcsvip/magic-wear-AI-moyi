@@ -1,9 +1,6 @@
-// 这是"获取当前登录用户信息"的接口（API）
-// 前端（比如导航栏）会调用这个接口来判断用户是否已登录
-// 如果已登录，返回用户信息；如果未登录，返回 null
-
 import { NextResponse } from 'next/server'
 import { getAuthToken, verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 // GET 函数：处理获取用户信息的请求
 export async function GET() {
@@ -18,8 +15,19 @@ export async function GET() {
   try {
     // 验证令牌是否有效（没过期、没被篡改）
     const payload = await verifyToken(token)
+
+    // 从数据库获取完整用户信息（包括 role）
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, username: true, role: true }
+    })
+
+    if (!user) {
+      return NextResponse.json({ user: null })
+    }
+
     // 令牌有效，返回用户信息
-    return NextResponse.json({ user: { id: payload.userId, username: payload.username } })
+    return NextResponse.json({ user })
   } catch {
     // 令牌无效（比如已过期），返回 null
     return NextResponse.json({ user: null })

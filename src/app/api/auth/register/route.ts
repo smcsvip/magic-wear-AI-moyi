@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
 
   const hashed = await bcrypt.hash(password, 10)
 
+  // 检查是否是首个用户（自动成为管理员）
+  const userCount = await prisma.user.count()
+  const isFirstUser = userCount === 0
+
   // 创建用户，同时记录邮箱修改时间（注册时设置的邮箱也算一次）
   const user = await prisma.user.create({
     data: {
@@ -78,6 +82,7 @@ export async function POST(request: NextRequest) {
       email: normalizedEmail,
       emailUpdatedAt: new Date(),
       password: hashed,
+      role: isFirstUser ? 'admin' : 'user', // 首个用户自动成为管理员
     },
   })
 
